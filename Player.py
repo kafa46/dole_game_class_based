@@ -5,6 +5,10 @@ import mediapipe as mp
 from WindowManager import WindowManager
 from utils.measure_arm_distance import measure_arm_distance
 
+mpPose = mp.solutions.pose
+pose = mp.solutions.pose.Pose()
+
+
 class Player():
     def __init__(self) -> None:
         self.max_angle = 160
@@ -21,14 +25,12 @@ class Player():
                                               # 나중에 선택적으로 변경할 수 있도록 코드 수정해야 함
     
     def draw_excercise_grid(self, frame, distance, monitor_info, train_arm_pos='right'):
-        
-        mpDraw= mp.solutions.drawing_utils  #미디어 파이프 초록색 선 그리기
-        mpPose = mp.solutions.pose
-        pose = mp.solutions.pose.Pose()
 
-        cv2.imshow('output', frame)
         results = pose.process(frame) 
-        landmark = results.pose_landmarks.landmark
+        try:
+            landmark = results.pose_landmarks.landmark
+        except:
+            return
         
         # Extract target shoulder location
         if train_arm_pos == 'right':
