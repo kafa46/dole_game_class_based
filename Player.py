@@ -1,16 +1,18 @@
 import cv2
-import numpy as np
 import mediapipe as mp
 
 from WindowManager import WindowManager
 from utils.measure_arm_distance import measure_arm_distance
+from utils.Colors import ColorCode
+from utils.PoseLandmarks import LandMarks
 
 mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
 
-
 class Player():
-    def __init__(self) -> None:
+    def __init__(self, num_moles=3, divide_units=3, arm_position='right') -> None:
+        self.num_moles = num_moles
+        self.divide_unit = divide_units
         self.max_angle = 160
         self.min_angle = 30
         self.num_count_left = 0
@@ -21,48 +23,104 @@ class Player():
         self.player_win_name = 'Player'
         self.distance = None # will be stored with tuple (left, right distance info)
         self.angle = None # will be stored with tuple (left, right angle info)
-        self.excercise_arm_position = 'right' # 운동하는 팔은 기본적으로 오른팔로 세팅, 
-                                              # 나중에 선택적으로 변경할 수 있도록 코드 수정해야 함
+        self.grid_color = ColorCode.GRID_COLOR
+        
+        # 좌, 우 팔 선택에 따라 반전
+        self.arm_position = arm_position
+        if self.arm_position == 'right':
+            self.shoulder_position = LandMarks.LEFT_SHOULDER
+            self.wrisk_position = LandMarks.LEFT_WRIST
+        elif self.arm_position == 'left':
+            self.shoulder_position = LandMarks.RIGHT_SHOULDER
+            self.wrisk_position = LandMarks.RIGHT_WRIST
+        else:
+            print(f'You selected arm position: {self.arm_position}')
+            print("arm_position must be either 'right' or 'left'")
+        
     
+    def calculate_frame_relative_coordinate(self, frame, coordinate_ratio):
+        frame_height, frame_width, _ = frame.shape
+        loc_x = int(frame_width * coordinate_ratio[0])
+        loc_y = int(frame_height * coordinate_ratio[1])
+        
+        return loc_x, loc_y
+
+    def get_landmark_coordinate(self, results, idx):
+        x = results.pose_landmarks.landmark[idx].x
+        y = results.pose_landmarks.landmark[idx].y
+        z = results.pose_landmarks.landmark[idx].z
+        
+        return x, y, z
+
     def draw_excercise_grid(self, frame, distance, monitor_info, train_arm_pos='right'):
 
-        results = pose.process(frame) 
         try:
+            results = pose.process(frame) 
             landmark = results.pose_landmarks.landmark
         except:
             return
+
+        # Get frame dimension from image (frame)
+        frame_height, frame_width, _ = frame.shape # we don't use channel info
         
-        # Extract target shoulder location
-        if train_arm_pos == 'right':
-            shoulder_loc = [
-                landmark[mpPose.PoseLandmark.RIGHT_SHOULDER].x,
-                landmark[mpPose.PoseLandmark.RIGHT_SHOULDER].y
-            ]            
+        # Calculate soulder location
+        shoulder_loc = self.get_landmark_coordinate(results, self.shoulder_position)
+        shoulder_loc = self.calculate_frame_relative_coordinate(frame, shoulder_loc)
+
+        # Calculate coordinate of current wrist location
+        wrist_loc = self.get_landmark_coordinate(results, self.wrisk_position)
+        wrist_loc = self.calculate_frame_relative_coordinate(frame, wrist_loc)
+
+        # # Get current window size
+        # window_height = monitor_info['height']
+        # window_width = monitor_info['width']
+
+        ### 우선 절대 격자를 먼저 그리는 방법을 테스트 ###
+        unit_dist_x = frame_width / self.divide_unit
+        unit_dist_y = frame_height / self.divide_unit
         
-        else:
-            shoulder_loc = [
-                landmark[mpPose.PoseLandmark.LEFT_SHOULDER].x,
-                landmark[mpPose.PoseLandmark.LEFT_SHOULDER].y
-            ]
+        # Draw Horizontal lines
+        for x in range(1, self.divide_unit):
+            cv2.line(
+                frame, 
+                (0, int(unit_dist_y * x)), 
+                (frame_width, int(unit_dist_y * x)), 
+                self.grid_color, # green line
+            )
+
+        # Draw vertical lines
+        for x in range(1, self.divide_unit):
+            cv2.line(
+                frame, 
+                (int(unit_dist_x * x), 0), 
+                (int(unit_dist_x * x), frame_height), 
+                self.grid_color, # green line
+            )        
+
+        # Draw a ractangle marker on target shoulder position
+        rectangle_end_loc = (shoulder_loc[0] + 30, shoulder_loc[1] - 3)
+        cv2.rectangle(
+            frame, 
+            shoulder_loc, 
+            rectangle_end_loc, 
+            thickness=-1, 
+            color=ColorCode.SHOULDER_MARKER
+        )
         
-        # Calculate coordinate of current shoulder location
-        window_height = monitor_info['height']
-        window_width = monitor_info['width']
-        
-        shoulder_x = int(window_height * shoulder_loc[0])
-        shoulder_y = int(window_width * shoulder_loc[1])
-        shoulder_loc = (shoulder_x, shoulder_y)
-        
-        # 우선 절대 격자를 먼저 그리는 방법을 테스트
-        target_loc = (shoulder_x + 30, shoulder_y)
-        cv2.line(frame, shoulder_loc, target_loc, (0, 0, 255))
+        # Draw cicle on wrist location
+        cv2.circle(
+            frame, 
+            (wrist_loc), 
+            radius=10, 
+            color=(0, 0, 255), 
+            thickness=-1
+        )
 
         cv2.imshow(self.player_win_name, frame)
 
         # # Calculate unit distance from target shoulder
         # relative_dist = max(distance['left'], distance['right'])
         # unit_dist = relative_dist * 
-
 
 
     def play_game(self,) -> None:
@@ -89,7 +147,7 @@ class Player():
             if not self.success:
                 cv2.imshow(self.player_win_name, frame)
             
-                print('\nMeasuring arm distance...')
+                # print('\nMeasuring arm distance...')
                 _ , self.success, self.distance, self.angle = measure_arm_distance(frame, self.player_win_name)
                 # print(f'success: {success} \t Arm distance: {distance} \t Arm angle: {angle}')
 
@@ -106,11 +164,6 @@ class Player():
             else:
                 current_monitor_info = win_manager.windows_info['Player']
                 self.draw_excercise_grid(frame, self.distance, current_monitor_info)
-                pass
-                
-
-
-
 
 if __name__=='__main__':
     # win_manager = WindowManager()

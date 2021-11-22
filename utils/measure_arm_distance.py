@@ -96,9 +96,9 @@ def measure_arm_distance(frame, win_name, success_crit=30):
             'right': RIGHT_SHOULDER,
         }
 
-        print(f'좌측 어깨   좌표(x, y): {LEFT_SHOULDER[0]},\t{LEFT_SHOULDER[1]}')
-        print(f'좌측 팔꿈치 좌표(x, y): {LEFT_ELBOW[0]},\t{LEFT_ELBOW[1]}')
-        print(f'좌측 손목   좌표(x, y): {LEFT_WRIST[0]},\t{LEFT_WRIST[1]}')
+        # print(f'좌측 어깨   좌표(x, y): {LEFT_SHOULDER[0]},\t{LEFT_SHOULDER[1]}')
+        # print(f'좌측 팔꿈치 좌표(x, y): {LEFT_ELBOW[0]},\t{LEFT_ELBOW[1]}')
+        # print(f'좌측 손목   좌표(x, y): {LEFT_WRIST[0]},\t{LEFT_WRIST[1]}')
 
         # Calculate angle for each arm
         angle_left_arm = calculate_angle(LEFT_WRIST, LEFT_ELBOW, LEFT_SHOULDER)
