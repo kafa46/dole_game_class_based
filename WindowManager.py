@@ -7,9 +7,9 @@ class WindowManager():
         self.num_doles = num_doles
         self.monitors = []
         self.display_monitor_id = 0
-        self.window_names = ['Dole', 'Player', 'Information']
+        self.window_names = ['Mole', 'Player', 'Information']
         self.windows_info = {
-            'Dole': {
+            'Mole': {
                 'location': None,
                 'height': None,
                 'width': None,
@@ -69,9 +69,9 @@ class WindowManager():
         dole_loc = (0, 0)
         dole_win_height = int(monitor_height * doleY_ratio)
         dole_win_width = int(monitor_width * doleX_ratio)
-        self.windows_info['Dole']['location'] = dole_loc
-        self.windows_info['Dole']['height'] = dole_win_height
-        self.windows_info['Dole']['width'] = dole_win_width
+        self.windows_info['Mole']['location'] = dole_loc
+        self.windows_info['Mole']['height'] = dole_win_height
+        self.windows_info['Mole']['width'] = dole_win_width
         
         # Coordianate info for 'player' window
         player_loc = (dole_win_width, 0)

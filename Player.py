@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 
+from time import sleep
 from WindowManager import WindowManager
 from utils.measure_arm_distance import measure_arm_distance
 from utils.Colors import ColorCode
@@ -30,33 +31,41 @@ class Player():
         if self.arm_position == 'right':
             self.shoulder_position = LandMarks.LEFT_SHOULDER
             self.wrisk_position = LandMarks.LEFT_WRIST
+            self.index_position = LandMarks.LEFT_INDEX
         elif self.arm_position == 'left':
             self.shoulder_position = LandMarks.RIGHT_SHOULDER
             self.wrisk_position = LandMarks.RIGHT_WRIST
+            self.index_position = LandMarks.RIGHT_INDEX
         else:
             print(f'You selected arm position: {self.arm_position}')
             print("arm_position must be either 'right' or 'left'")
         
     
-    def calculate_frame_relative_coordinate(self, frame, coordinate_ratio):
-        frame_height, frame_width, _ = frame.shape
-        loc_x = int(frame_width * coordinate_ratio[0])
-        loc_y = int(frame_height * coordinate_ratio[1])
-        
-        return loc_x, loc_y
+    def calculate_frame_relative_coordinate(self, frame, results, idx):
+        """[summary]
 
-    def get_landmark_coordinate(self, results, idx):
+        Args:
+            frame (numpy array): img, in case we use fram from webcam
+            results ([type]): [description]
+            idx ([type]): [description]
+
+        Returns:
+            tuple: (loc_x, loc_y), relative location of frame
+        """        
         x = results.pose_landmarks.landmark[idx].x
         y = results.pose_landmarks.landmark[idx].y
-        z = results.pose_landmarks.landmark[idx].z
+        # z = results.pose_landmarks.landmark[idx].z # we don't use z value, only use (x, y)
         
-        return x, y, z
+        frame_height, frame_width, _ = frame.shape
+        loc_x = int(frame_width * x)
+        loc_y = int(frame_height * y)
+        
+        return loc_x, loc_y
 
     def draw_excercise_grid(self, frame, distance, monitor_info, train_arm_pos='right'):
 
         try:
             results = pose.process(frame) 
-            landmark = results.pose_landmarks.landmark
         except:
             return
 
@@ -64,16 +73,10 @@ class Player():
         frame_height, frame_width, _ = frame.shape # we don't use channel info
         
         # Calculate soulder location
-        shoulder_loc = self.get_landmark_coordinate(results, self.shoulder_position)
-        shoulder_loc = self.calculate_frame_relative_coordinate(frame, shoulder_loc)
+        shoulder_loc = self.calculate_frame_relative_coordinate(frame, results, self.shoulder_position)
 
-        # Calculate coordinate of current wrist location
-        wrist_loc = self.get_landmark_coordinate(results, self.wrisk_position)
-        wrist_loc = self.calculate_frame_relative_coordinate(frame, wrist_loc)
-
-        # # Get current window size
-        # window_height = monitor_info['height']
-        # window_width = monitor_info['width']
+        # Calculate coordinate of current index location
+        index_loc = self.calculate_frame_relative_coordinate(frame, results, self.index_position)
 
         ### 우선 절대 격자를 먼저 그리는 방법을 테스트 ###
         unit_dist_x = frame_width / self.divide_unit
@@ -110,7 +113,7 @@ class Player():
         # Draw cicle on wrist location
         cv2.circle(
             frame, 
-            (wrist_loc), 
+            (index_loc), 
             radius=10, 
             color=(0, 0, 255), 
             thickness=-1
@@ -118,6 +121,7 @@ class Player():
 
         cv2.imshow(self.player_win_name, frame)
 
+        ### Future Work Area ###
         # # Calculate unit distance from target shoulder
         # relative_dist = max(distance['left'], distance['right'])
         # unit_dist = relative_dist * 
@@ -164,6 +168,8 @@ class Player():
             else:
                 current_monitor_info = win_manager.windows_info['Player']
                 self.draw_excercise_grid(frame, self.distance, current_monitor_info)
+                # sleep(1)
+                
 
 if __name__=='__main__':
     # win_manager = WindowManager()

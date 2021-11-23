@@ -1,4 +1,9 @@
+import threading
+
+from time import sleep
+
 from WindowManager import WindowManager
+from MoleManager import MoleManager
 from Player import Player
 
 class GameManager():
@@ -17,7 +22,17 @@ class GameManager():
 
         # Activate the mole game player
         player = Player()
-        player.play_game()
+        # player.play_game()
+        
+        
+        # Activate moles window manager
+        mole_manager = MoleManager()
+        mole_manager.generate_grid_on_moleWindow()
+        
+        # thread_player = threading.Thread(target=player.play_game)
+        # thread_mole_manager = threading.Thread(target=mole_manager.generate_grid_on_moleWindow)
+        # thread_player.start()
+        # thread_mole_manager.start()
 
 
     def pause(self,):
