@@ -1,6 +1,10 @@
 import cv2
 
 def combine_bitwise(hpos, vpos, src_img_path, dst_img_path):
+    
+    # 참고 블로그
+    #   -> https://m.blog.naver.com/samsjang/220503082434 
+    
     base_img = cv2.imread(src_img_path, cv2.IMREAD_COLOR) # 배경
     top_img = cv2.imread(dst_img_path, cv2.IMREAD_COLOR) # 두더지
 

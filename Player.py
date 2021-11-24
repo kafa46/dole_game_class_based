@@ -25,6 +25,8 @@ class Player():
         self.distance = None # will be stored with tuple (left, right distance info)
         self.angle = None # will be stored with tuple (left, right angle info)
         self.grid_color = ColorCode.GRID_COLOR
+        self.prev_shoulder_loc = None
+        self.prev_index_loc = None
         
         # 좌, 우 팔 선택에 따라 반전
         self.arm_position = arm_position
@@ -73,10 +75,18 @@ class Player():
         frame_height, frame_width, _ = frame.shape # we don't use channel info
         
         # Calculate soulder location
-        shoulder_loc = self.calculate_frame_relative_coordinate(frame, results, self.shoulder_position)
+        try:
+            shoulder_loc = self.calculate_frame_relative_coordinate(frame, results, self.shoulder_position)
+            self.prev_shoulder_loc = shoulder_loc
+        except:
+            shoulder_loc = self.prev_shoulder_loc
 
         # Calculate coordinate of current index location
-        index_loc = self.calculate_frame_relative_coordinate(frame, results, self.index_position)
+        try:
+            index_loc = self.calculate_frame_relative_coordinate(frame, results, self.index_position)
+            self.prev_index_loc = index_loc
+        except:
+            index_loc = self.prev_index_loc
 
         ### 우선 절대 격자를 먼저 그리는 방법을 테스트 ###
         unit_dist_x = frame_width / self.divide_unit
@@ -135,7 +145,6 @@ class Player():
         win_manager.create_windows()
         self.player_win_name = win_manager.window_names[1]
 
-        
         cap = cv2.VideoCapture(0)
         if cap.isOpened():
             print(f"\n웹캠 작동 상태: {cap.isOpened()}")

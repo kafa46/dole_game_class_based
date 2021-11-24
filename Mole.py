@@ -4,26 +4,24 @@ from WindowManager import WindowManager
 
 class Mole():
     
-    def __init__(
-        self, pos_x=50, pos_y=50, 
-        mole_img_path='./imgs/mole_jklee_no_bg.png',
-        bg_img_path='./imgs/bg_yellow.png',
-    ) -> None:
+    def __init__(self, mole_unit_size_x=500, mole_unit_size_y=500, mole_unit_loc_x=10, mole_unit_loc_y=10) -> None:
 
         # Mole image
         self.moleX = 150 # mole size X
         self.moleY = 150 # mole size Y
-        self.mole_image_path = mole_img_path
-        self.mole_img = None
 
         # background image
         self.bg_frame_x = 800 # resize scale x
         self.bg_frame_y = 600 # resize scale y
-        self.bg_frame_path =  bg_img_path
-        self.bg_frame_img = None
-        
-        self.pos_x = pos_x 
-        self.pos_y = pos_y
+        self.mole_image = cv2.imread('./imgs/mole_jklee.jpg', cv2.IMREAD_COLOR)
+        self.bg_frame = cv2.imread('./imgs/bg_white.png', cv2.IMREAD_COLOR)
+        self.mole_image_resized = cv2.resize(self.mole_image, dsize=(self.moleX, self.moleY), interpolation=cv2.INTER_CUBIC)
+        self.mole_unit_size_x = mole_unit_size_x
+        self.mole_unit_size_y = mole_unit_size_y
+        self.pos_x = 50
+        self.pos_y = 50
+        self.mole_unit_loc_x = mole_unit_loc_x
+        self.mole_unit_loc_y = mole_unit_loc_y
 
         self.wind_name = 'Mole'
     
@@ -120,33 +118,38 @@ class Mole():
         
     def show_up(self,):
         
-        win_manager = WindowManager()
-        win_manager.get_screenInfo()
-        win_manager.display_monitorInfo()
-        win_manager.create_windows()
+        mole_resize_unit_size = cv2.resize(
+            self.mole_image, 
+            (self.mole_unit_size_x, self.mole_unit_size_y), 
+            interpolation=cv2.INTER_CUBIC,
+        )
         
-        rows, cols, _ =self.mole_image.shape
+        bg_resize_unit_size = cv2.resize(
+            self.mole_image, 
+            (self.mole_unit_size_x, self.mole_unit_size_y), 
+            interpolation=cv2.INTER_CUBIC
+        )
         
-        frame = cv2.resize(self.mole_image, (self.moleX, self.moleY), interpolation=cv2.INTER_CUBIC)
-        frameX = 200 - round(rows * 0.5)
-        frameY = round(600/2)-round(cols * 0.5)
-        
-        
-        # 두더지 파일 필셀값을 관심영역(ROI)으로 저장함
-        roi = frame[frameY:rows+frameY, frameX:cols+frameX] 
-        cv2.imshow('Mole', self.mole_image)
-       
+        cv2.imshow('mole - showup', mole_resize_unit_size)
         cv2.waitKey()
         cv2.destroyAllWindows()
     
     def disappear(self,):
-        pass
-    
-    def adjust_size(self,):
-        pass
+
+        bg_resize_unit_size = cv2.resize(
+            self.bg_frame, 
+            (self.mole_unit_size_x, self.mole_unit_size_y), 
+            interpolation=cv2.INTER_CUBIC
+        )
+        
+        cv2.imshow('mole - disappear', bg_resize_unit_size)
+        cv2.waitKey()
+        cv2.destroyAllWindows()
 
 
 if __name__=='__main__': 
     mole = Mole()
-    mole.img_preprocessiong()
-    # mole.show_up()
+    mole.show_up()
+    mole.disappear()
+    
+    print('Bye, end of computation ^^.')

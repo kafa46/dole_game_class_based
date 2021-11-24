@@ -11,7 +11,7 @@ class MoleManager():
     def __init__(self, divide_unit=3) -> None:
         self.divide_unit = divide_unit
         self.win_name = 'Mole'
-        self.bg_frame =  cv2.imread('./imgs/bg_yellow.png', cv2.IMREAD_COLOR)
+        self.bg_frame =  cv2.imread('./imgs/bg_white.png', cv2.IMREAD_COLOR)
         self.grid_color = ColorCode.RED
 
     def generate_grid_on_moleWindow(self, ):
@@ -64,8 +64,8 @@ if __name__=='__main__':
     # print()
     
     mole_manager = MoleManager()
-    
-    frame = mole_manager.generate_grid_on_moleWindow()
+    mole_manager.generate_grid_on_moleWindow()
+    # frame = mole_manager.generate_grid_on_moleWindow()
     
     print('Bye, end of computation ^^')
     
