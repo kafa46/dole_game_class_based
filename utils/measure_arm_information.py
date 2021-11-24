@@ -9,6 +9,68 @@ mpDraw= mp.solutions.drawing_utils  #미디어 파이프 초록색 선 그리기
 mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
 
+def measure_shoulder_elbow_wrist_loc(frame, success_crit=160):
+    
+    results = pose.process(frame)
+    
+    try:
+        landmark = results.pose_landmarks.landmark
+        
+        # 좌측 어깨 좌표
+        LEFT_SHOULDER = (
+            landmark[mpPose.PoseLandmark.LEFT_SHOULDER].x,
+            landmark[mpPose.PoseLandmark.LEFT_SHOULDER].y
+        )
+        
+        # 좌측 팔꿈치 좌표
+        LEFT_ELBOW = (
+            landmark[mpPose.PoseLandmark.LEFT_ELBOW].x,
+            landmark[mpPose.PoseLandmark.LEFT_ELBOW].y
+        )
+
+        # 좌측 손목 좌표
+        LEFT_WRIST = (
+            landmark[mpPose.PoseLandmark.LEFT_WRIST].x,
+            landmark[mpPose.PoseLandmark.LEFT_WRIST].y
+        )
+
+        # 우측 어깨 좌표
+        RIGHT_SHOULDER = (
+            landmark[mpPose.PoseLandmark.RIGHT_SHOULDER].x,
+            landmark[mpPose.PoseLandmark.RIGHT_SHOULDER].y
+        )
+        
+        # 우측 팔꿈치 좌표
+        RIGHT_ELBOW = (
+            landmark[mpPose.PoseLandmark.RIGHT_ELBOW].x,
+            landmark[mpPose.PoseLandmark.RIGHT_ELBOW].y
+        )
+
+        # 우측 손목 좌표
+        RIGHT_WRIST = (
+            landmark[mpPose.PoseLandmark.RIGHT_WRIST].x,
+            landmark[mpPose.PoseLandmark.RIGHT_WRIST].y
+        )
+
+        # Calculate angle for each arm
+        angle_left_arm = calculate_angle(LEFT_WRIST, LEFT_ELBOW, LEFT_SHOULDER)
+        angle_right_arm = calculate_angle(RIGHT_WRIST, RIGHT_ELBOW, RIGHT_SHOULDER)
+
+        angle = {
+            'left': angle_left_arm, 
+            'right': angle_right_arm,
+        }
+
+        if (angle['left'] < success_crit) and (angle['right'] < success_crit):
+            success = True
+        else:
+            success = False
+
+    except:
+        angle = None
+
+    return angle
+
 # 팔 각도 120도 이상 확인, 팔 거리를 계산
 def measure_arm_distance(frame, win_name, success_crit=30):
     '''
@@ -55,40 +117,40 @@ def measure_arm_distance(frame, win_name, success_crit=30):
         #   WindowManager의 스크린 정보를 활용해야 함
         
         # 좌측 어깨 좌표
-        LEFT_SHOULDER = [
+        LEFT_SHOULDER = (
             landmark[mpPose.PoseLandmark.LEFT_SHOULDER].x,
             landmark[mpPose.PoseLandmark.LEFT_SHOULDER].y
-        ]
+        )
         
         # 좌측 팔꿈치 좌표
-        LEFT_ELBOW = [
+        LEFT_ELBOW = (
             landmark[mpPose.PoseLandmark.LEFT_ELBOW].x,
             landmark[mpPose.PoseLandmark.LEFT_ELBOW].y
-        ]
+        )
 
         # 좌측 손목 좌표
-        LEFT_WRIST = [
+        LEFT_WRIST = (
             landmark[mpPose.PoseLandmark.LEFT_WRIST].x,
             landmark[mpPose.PoseLandmark.LEFT_WRIST].y
-        ]
+        )
 
         # 우측 어깨 좌표
-        RIGHT_SHOULDER = [
+        RIGHT_SHOULDER = (
             landmark[mpPose.PoseLandmark.RIGHT_SHOULDER].x,
             landmark[mpPose.PoseLandmark.RIGHT_SHOULDER].y
-        ]
+        )
         
         # 우측 팔꿈치 좌표
-        RIGHT_ELBOW = [
+        RIGHT_ELBOW = (
             landmark[mpPose.PoseLandmark.RIGHT_ELBOW].x,
             landmark[mpPose.PoseLandmark.RIGHT_ELBOW].y
-        ]
+        )
 
         # 우측 손목 좌표
-        RIGHT_WRIST = [
+        RIGHT_WRIST = (
             landmark[mpPose.PoseLandmark.RIGHT_WRIST].x,
             landmark[mpPose.PoseLandmark.RIGHT_WRIST].y
-        ]
+        )
 
         # Store shoulder location into a dict
         shoulder_loc = {
@@ -109,7 +171,7 @@ def measure_arm_distance(frame, win_name, success_crit=30):
         }
 
 
-        print(angle_left_arm)
+        # print(angle_left_arm)
         
         # 두 팔을 30도 이내로 구부렸는지 확인하여 success 판정
         if (angle['left'] < success_crit) and (angle['right'] < success_crit):
@@ -170,5 +232,6 @@ def measure_arm_distance(frame, win_name, success_crit=30):
         success = False
         distance = None
         angle = None
+        shoulder_loc = None
     
-    return frame, success, distance, angle
+    return frame, success, distance, angle, shoulder_loc

@@ -1,7 +1,7 @@
 class ColorCode():
-    RED = (255, 0, 0)
+    RED = (0, 0, 255)
     GREEN = (0, 255, 0)
-    BLUE = (0, 0, 255)
+    BLUE = (255, 0, 0)
     GRID_COLOR = (153, 153, 0)
     SHOULDER_MARKER = (255, 255, 0)
     WRIST_MARKER = (153, 0, 0)

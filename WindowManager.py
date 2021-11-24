@@ -7,7 +7,13 @@ class WindowManager():
         self.num_doles = num_doles
         self.monitors = []
         self.display_monitor_id = 0
-        self.window_names = ['Mole', 'Player', 'Information']
+        
+        self.window_names = {
+            'Mole': 'Mole', 
+            'Player': 'Player', 
+            'Information': 'Information'
+        }
+        
         self.windows_info = {
             'Mole': {
                 'location': None,
@@ -40,7 +46,7 @@ class WindowManager():
                 'is_primary': m.is_primary,
             }
             self.monitors.append(monitor_info)
-            print(str(m))
+            
         return monitors
     
     def display_monitorInfo(self,):
@@ -90,19 +96,19 @@ class WindowManager():
         self.windows_info['Information']['width'] = player_win_width
 
         # Create 'Dole Game' window
-        cv2.namedWindow(self.window_names[0], flags=cv2.WINDOW_GUI_NORMAL)
-        cv2.resizeWindow(self.window_names[0], width=dole_win_width, height=dole_win_height)
-        cv2.moveWindow(self.window_names[0], x=0, y=0)
+        cv2.namedWindow(self.window_names['Mole'], flags=cv2.WINDOW_GUI_NORMAL)
+        cv2.resizeWindow(self.window_names['Mole'], width=dole_win_width, height=dole_win_height)
+        cv2.moveWindow(self.window_names['Mole'], x=0, y=0)
 
         # Create 'Player' window
-        cv2.namedWindow(self.window_names[1], flags=cv2.WINDOW_GUI_NORMAL)
-        cv2.resizeWindow(self.window_names[1], width=player_win_width, height=player_win_height)
-        cv2.moveWindow(self.window_names[1], x=player_loc[0], y=player_loc[1])
+        cv2.namedWindow(self.window_names['Player'], flags=cv2.WINDOW_GUI_NORMAL)
+        cv2.resizeWindow(self.window_names['Player'], width=player_win_width, height=player_win_height)
+        cv2.moveWindow(self.window_names['Player'], x=player_loc[0], y=player_loc[1])
 
         # Create 'Information' window
-        cv2.namedWindow(self.window_names[2], flags=cv2.WINDOW_GUI_NORMAL)
-        cv2.resizeWindow(self.window_names[2], width=info_win_width, height=info_win_height)
-        cv2.moveWindow(self.window_names[2], x=info_loc[0], y=info_loc[1])
+        cv2.namedWindow(self.window_names['Information'], flags=cv2.WINDOW_GUI_NORMAL)
+        cv2.resizeWindow(self.window_names['Information'], width=info_win_width, height=info_win_height)
+        cv2.moveWindow(self.window_names['Information'], x=info_loc[0], y=info_loc[1])
 
 if __name__=='__main__':
     win_manager = WindowManager()

@@ -3,9 +3,11 @@ import mediapipe as mp
 
 from time import sleep
 from WindowManager import WindowManager
-from utils.measure_arm_distance import measure_arm_distance
+from MoleManager import MoleManager
+from utils.measure_arm_information import measure_arm_distance, measure_shoulder_elbow_wrist_loc
 from utils.Colors import ColorCode
 from utils.PoseLandmarks import LandMarks
+from utils.angle_calculaters import calculate_angle
 
 mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
@@ -21,12 +23,12 @@ class Player():
         self.shrinked_left = True
         self.shrinked_right = True
         self.success = False
-        self.player_win_name = 'Player'
         self.distance = None # will be stored with tuple (left, right distance info)
         self.angle = None # will be stored with tuple (left, right angle info)
         self.grid_color = ColorCode.GRID_COLOR
         self.prev_shoulder_loc = None
         self.prev_index_loc = None
+        self.success_crit_for_hit_mole = 120
         
         # 좌, 우 팔 선택에 따라 반전
         self.arm_position = arm_position
@@ -42,6 +44,8 @@ class Player():
             print(f'You selected arm position: {self.arm_position}')
             print("arm_position must be either 'right' or 'left'")
         
+        super().__init__()  
+        
     
     def calculate_frame_relative_coordinate(self, frame, results, idx):
         """[summary]
@@ -53,7 +57,7 @@ class Player():
 
         Returns:
             tuple: (loc_x, loc_y), relative location of frame
-        """        
+        """     
         x = results.pose_landmarks.landmark[idx].x
         y = results.pose_landmarks.landmark[idx].y
         # z = results.pose_landmarks.landmark[idx].z # we don't use z value, only use (x, y)
@@ -66,27 +70,8 @@ class Player():
 
     def draw_excercise_grid(self, frame, distance, monitor_info, train_arm_pos='right'):
 
-        try:
-            results = pose.process(frame) 
-        except:
-            return
-
         # Get frame dimension from image (frame)
         frame_height, frame_width, _ = frame.shape # we don't use channel info
-        
-        # Calculate soulder location
-        try:
-            shoulder_loc = self.calculate_frame_relative_coordinate(frame, results, self.shoulder_position)
-            self.prev_shoulder_loc = shoulder_loc
-        except:
-            shoulder_loc = self.prev_shoulder_loc
-
-        # Calculate coordinate of current index location
-        try:
-            index_loc = self.calculate_frame_relative_coordinate(frame, results, self.index_position)
-            self.prev_index_loc = index_loc
-        except:
-            index_loc = self.prev_index_loc
 
         ### 우선 절대 격자를 먼저 그리는 방법을 테스트 ###
         unit_dist_x = frame_width / self.divide_unit
@@ -110,8 +95,35 @@ class Player():
                 self.grid_color, # green line
             )        
 
+        # cv2.imshow(self.player_win_name, frame)
+
+        return frame
+
+
+    def draw_shoulder_and_hand_loc(self, frame):
+        try:
+            results = pose.process(frame) 
+        except:
+            return
+
+        # Calculate soulder location
+        try:
+            shoulder_loc = self.calculate_frame_relative_coordinate(frame, results, self.shoulder_position)
+            self.prev_shoulder_loc = shoulder_loc
+        except:
+            shoulder_loc = self.prev_shoulder_loc
+
+        # Calculate coordinate of current index location
+        try:
+            index_loc = self.calculate_frame_relative_coordinate(frame, results, self.index_position)
+        except:
+            index_loc = self.prev_index_loc
+        
         # Draw a ractangle marker on target shoulder position
         rectangle_end_loc = (shoulder_loc[0] + 30, shoulder_loc[1] - 3)
+        
+        # Draw rectangle on shoulder location
+
         cv2.rectangle(
             frame, 
             shoulder_loc, 
@@ -129,21 +141,18 @@ class Player():
             thickness=-1
         )
 
-        cv2.imshow(self.player_win_name, frame)
-
-        ### Future Work Area ###
-        # # Calculate unit distance from target shoulder
-        # relative_dist = max(distance['left'], distance['right'])
-        # unit_dist = relative_dist * 
-
-
+        return frame
+    
     def play_game(self,) -> None:
         
         win_manager = WindowManager()
         win_manager.get_screenInfo()
         win_manager.display_monitorInfo()
         win_manager.create_windows()
-        self.player_win_name = win_manager.window_names[1]
+        self.player_win_name = win_manager.window_names['Player']
+
+        mole_manager = MoleManager()
+       
 
         cap = cv2.VideoCapture(0)
         if cap.isOpened():
@@ -160,24 +169,47 @@ class Player():
             if not self.success:
                 cv2.imshow(self.player_win_name, frame)
             
-                # print('\nMeasuring arm distance...')
-                _ , self.success, self.distance, self.angle = measure_arm_distance(frame, self.player_win_name)
-                # print(f'success: {success} \t Arm distance: {distance} \t Arm angle: {angle}')
-
-                if not self.success or not self.distance:
+                _ , self.success, self.distance, self.angle, shoulder_loc = measure_arm_distance(
+                                                                                frame, 
+                                                                                self.player_win_name
+                                                                            )
+                
+                if not self.success or not self.distance or not shoulder_loc:
                     continue
 
-                elif self.success and self.distance and self.angle:
+                elif self.success and self.distance and self.angle and shoulder_loc:
                     self.success = True
+                    try:
+                        results = pose.process(frame) 
+                        self.prev_shoulder_loc = self.calculate_frame_relative_coordinate(
+                                                    frame, 
+                                                    results, 
+                                                    self.shoulder_position
+                                                )
+                    except:
+                        continue
+                    
                 
                 else:
-                    pass
+                    continue
             
-            # 초기 팔 거리를 구하면  화면에 distance 값을 활용하여 격자 그리기
             else:
+                # Processing Player window
                 current_monitor_info = win_manager.windows_info['Player']
-                self.draw_excercise_grid(frame, self.distance, current_monitor_info)
-                # sleep(1)
+                frame_player = self.draw_excercise_grid(frame, self.distance, current_monitor_info)
+                frame_player = self.draw_shoulder_and_hand_loc(frame)
+                cv2.imshow(win_manager.window_names['Player'], frame_player)
+                
+                # Processing Mole window
+                frame_mole_window = mole_manager.generate_grid_on_moleWindow()
+                cv2.imshow(win_manager.window_names['Mole'], frame_mole_window)
+
+                # Compute arm angle -> do actions with mole image
+                hit_success = measure_shoulder_elbow_wrist_loc(frame, success_crit=self.success_crit_for_hit_mole)
+                
+                
+
+
                 
 
 if __name__=='__main__':

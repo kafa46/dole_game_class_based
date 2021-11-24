@@ -11,9 +11,8 @@ class MoleManager():
     def __init__(self, divide_unit=3) -> None:
         self.divide_unit = divide_unit
         self.win_name = 'Mole'
-        self.bg_frame =  cv2.imread('./imgs/bg_white.png', cv2.IMREAD_COLOR)
-        self.grid_color = ColorCode.RED
-
+        self.bg_frame =  cv2.imread('./imgs/bg_yellow.png', cv2.IMREAD_COLOR)
+        
     def generate_grid_on_moleWindow(self, ):
         
         win_manager = WindowManager()
@@ -26,34 +25,54 @@ class MoleManager():
         win_width = win_manager.windows_info[self.win_name]['width']
         
         frame_height, frame_width, _ = self.bg_frame.shape
-        print(f'height: {frame_height}, width: {frame_width}')
+        # print(f'height: {frame_height}, width: {frame_width}')
         
         # Calculate unit-distance 
         unit_dist_x = frame_width / self.divide_unit
         unit_dist_y = frame_height / self.divide_unit
  
-        while cv2.waitKey(33) < 0:
-            
-            # Draw Horizontal lines
-            for x in range(1, self.divide_unit):
-                    cv2.line(
-                    self.bg_frame, 
-                    (0, int(unit_dist_y * x)), 
-                    (frame_width, int(unit_dist_y * x)), 
-                    self.grid_color, # green line
-                )
 
-            # Draw vertical lines
-            for x in range(1, self.divide_unit):
+        # Draw Horizontal lines
+        for x in range(1, self.divide_unit):
                 cv2.line(
-                    self.bg_frame, 
-                    (int(unit_dist_x * x), 0), 
-                    (int(unit_dist_x * x), frame_height), 
-                    self.grid_color, # green line
-                )    
+                self.bg_frame, 
+                (0, int(unit_dist_y * x)), 
+                (frame_width, int(unit_dist_y * x)), 
+                ColorCode.RED, 
+            )
+
+        # Draw vertical lines
+        for x in range(1, self.divide_unit):
+            cv2.line(
+                self.bg_frame, 
+                (int(unit_dist_x * x), 0), 
+                (int(unit_dist_x * x), frame_height), 
+                ColorCode.RED, 
+            )    
+        
+        return self.bg_frame
+
+        # while cv2.waitKey(33) < 0:
             
-            cv2.imshow(self.win_name, self.bg_frame)
-            # sleep(1)
+        #     # Draw Horizontal lines
+        #     for x in range(1, self.divide_unit):
+        #             cv2.line(
+        #             self.bg_frame, 
+        #             (0, int(unit_dist_y * x)), 
+        #             (frame_width, int(unit_dist_y * x)), 
+        #             self.grid_color, # green line
+        #         )
+
+        #     # Draw vertical lines
+        #     for x in range(1, self.divide_unit):
+        #         cv2.line(
+        #             self.bg_frame, 
+        #             (int(unit_dist_x * x), 0), 
+        #             (int(unit_dist_x * x), frame_height), 
+        #             self.grid_color, # green line
+        #         )    
+            
+        #     cv2.imshow(self.win_name, self.bg_frame)
 
 
 if __name__=='__main__':

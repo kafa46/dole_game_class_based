@@ -4,7 +4,11 @@ from WindowManager import WindowManager
 
 class Mole():
     
-    def __init__(self, mole_unit_size_x=500, mole_unit_size_y=500, mole_unit_loc_x=10, mole_unit_loc_y=10) -> None:
+    def __init__(
+        self, 
+        mole_unit_size_x=500, mole_unit_size_y=500, 
+        mole_unit_loc_x=10, mole_unit_loc_y=10
+    ) -> None:
 
         # Mole image
         self.moleX = 150 # mole size X
@@ -15,13 +19,19 @@ class Mole():
         self.bg_frame_y = 600 # resize scale y
         self.mole_image = cv2.imread('./imgs/mole_jklee.jpg', cv2.IMREAD_COLOR)
         self.bg_frame = cv2.imread('./imgs/bg_white.png', cv2.IMREAD_COLOR)
-        self.mole_image_resized = cv2.resize(self.mole_image, dsize=(self.moleX, self.moleY), interpolation=cv2.INTER_CUBIC)
         self.mole_unit_size_x = mole_unit_size_x
         self.mole_unit_size_y = mole_unit_size_y
         self.pos_x = 50
         self.pos_y = 50
         self.mole_unit_loc_x = mole_unit_loc_x
         self.mole_unit_loc_y = mole_unit_loc_y
+        
+        self.mole_image_resized = cv2.resize(
+            self.mole_image, 
+            dsize=(self.moleX, self.moleY), 
+            interpolation=cv2.INTER_CUBIC
+        )
+        
 
         self.wind_name = 'Mole'
     
