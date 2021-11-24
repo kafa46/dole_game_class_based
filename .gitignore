@@ -1,5 +1,6 @@
 *.pyc
 *.swp
 .vscode
+.vs
 __pycache__
 .notebook
