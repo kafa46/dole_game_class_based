@@ -1,4 +1,3 @@
-from typing import List, Tuple
 import cv2 
 from screeninfo import get_monitors
 
@@ -35,7 +34,7 @@ class WindowManager():
 
         }
 
-    def get_screenInfo(self,) -> List:
+    def get_screenInfo(self,):
         monitors = [monitor for monitor in get_monitors()]
         for m in monitors:
             monitor_info = {

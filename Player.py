@@ -15,7 +15,7 @@ mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
 
 class Player():
-    def __init__(self, num_moles=3, divide_units=3, arm_position='left') -> None:
+    def __init__(self, num_moles=3, divide_units=3, arm_position='right') -> None:
         self.num_moles = num_moles
         self.divide_unit = divide_units
         self.max_angle = 160
@@ -131,7 +131,6 @@ class Player():
             return None
         
         # Draw rectangle on shoulder location
-
         cv2.rectangle(
             frame, 
             shoulder_loc, 
@@ -158,12 +157,17 @@ class Player():
         win_manager.display_monitorInfo()
         win_manager.create_windows()
         self.player_win_name = win_manager.window_names['Player']
+        bg_screen_size = (
+            win_manager.windows_info['Mole']['height'],
+            win_manager.windows_info['Mole']['width'],
+        ) 
 
-        mole_manager = MoleManager()
+        mole_manager = MoleManager(bg_screen_size)
         
         # Processing Mole window
         frame_mole_window = mole_manager.generate_grid_on_moleWindow(win_manager)
-        mole_unit_loc_dic = get_mole_locations(frame_mole_window, self.divide_unit)  # location on original bg_frame (image)
+        mole_unit_loc_list = get_mole_locations(frame_mole_window, self.divide_unit)  # location on original bg_frame (image)
+        mole_manager.create_moles(mole_unit_loc_list)
         
         cap = cv2.VideoCapture(0)
         if cap.isOpened():
@@ -230,30 +234,12 @@ class Player():
                 pane_id = get_grid_unit_id(frame, self.divide_unit, index_pos)
                 
                 if pane_id != None:
-                    # print(f'mole_pane_id: {pane_id}\n')
-                    pass
+                    print(f'mole_pane_id: {pane_id}\n')
+                    
                 else:
                     continue
-                
-                # hit_success = decide_mole_hit(angle, self.success_crit_for_hit_mole)
-                # # print(f'hit_success: {hit_success}')
-                
-                # if hit_success:
-                #     # Get mole pane ID
-                #     results = pose.process(frame) 
-                #     index_pos = self.calculate_frame_relative_coordinate(frame, results, self.index_position)
-                #     pane_id = get_grid_unit_id(frame, self.divide_unit, index_pos)
-                    
-                #     if pane_id:
-                #         print(f'hit_success: {hit_success}')
-                #         print(f'mole_pane_id: {pane_id}\n')
-                    
-                #     # Mole disappear
-                #     pass
-                
-                # else:
-                #     pass
-                
+
+
                 # 전체 이미지 처리 후 반전
                 frame_player = cv2.flip(frame_player, 1)
                 cv2.imshow(win_manager.window_names['Player'], frame_player)
