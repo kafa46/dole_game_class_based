@@ -9,10 +9,8 @@ mpDraw= mp.solutions.drawing_utils  #미디어 파이프 초록색 선 그리기
 mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
 
-def measure_shoulder_elbow_wrist_loc(frame, success_crit=160):
-    
+def measure_shoulder_elbow_wrist_loc(frame, success_crit=30):
     results = pose.process(frame)
-    
     try:
         landmark = results.pose_landmarks.landmark
         
@@ -34,6 +32,12 @@ def measure_shoulder_elbow_wrist_loc(frame, success_crit=160):
             landmark[mpPose.PoseLandmark.LEFT_WRIST].y
         )
 
+        # 좌측 검지 좌표
+        LEFT_INDEX = (
+            landmark[mpPose.PoseLandmark.LEFT_INDEX].x,
+            landmark[mpPose.PoseLandmark.LEFT_INDEX].y
+        )
+
         # 우측 어깨 좌표
         RIGHT_SHOULDER = (
             landmark[mpPose.PoseLandmark.RIGHT_SHOULDER].x,
@@ -51,25 +55,40 @@ def measure_shoulder_elbow_wrist_loc(frame, success_crit=160):
             landmark[mpPose.PoseLandmark.RIGHT_WRIST].x,
             landmark[mpPose.PoseLandmark.RIGHT_WRIST].y
         )
+        
+        # 우측 검지 좌표
+        RIGHT_INDEX = (
+            landmark[mpPose.PoseLandmark.RIGHT_INDEX].x,
+            landmark[mpPose.PoseLandmark.RIGHT_INDEX].y
+        )
 
-        # Calculate angle for each arm
-        angle_left_arm = calculate_angle(LEFT_WRIST, LEFT_ELBOW, LEFT_SHOULDER)
-        angle_right_arm = calculate_angle(RIGHT_WRIST, RIGHT_ELBOW, RIGHT_SHOULDER)
-
-        angle = {
-            'left': angle_left_arm, 
-            'right': angle_right_arm,
+        shoulder_loc = {
+            'left': LEFT_SHOULDER,
+            'right': RIGHT_SHOULDER,
         }
-
-        if (angle['left'] < success_crit) and (angle['right'] < success_crit):
-            success = True
-        else:
-            success = False
-
+        
+        elbow_loc = {
+            'left': LEFT_ELBOW,
+            'right': RIGHT_ELBOW,
+        }
+        
+        wrist_loc = {
+            'left': LEFT_WRIST,
+            'right': RIGHT_WRIST,
+        }
+        
+        index_loc = {
+            'left': LEFT_INDEX,
+            'right': RIGHT_INDEX,
+        }
+        
     except:
-        angle = None
-
-    return angle
+        shoulder_loc = None
+        elbow_loc = None
+        wrist_loc = None
+        index_loc = None
+        
+    return shoulder_loc, elbow_loc, wrist_loc, index_loc
 
 # 팔 각도 120도 이상 확인, 팔 거리를 계산
 def measure_arm_distance(frame, win_name, success_crit=30):
@@ -235,3 +254,10 @@ def measure_arm_distance(frame, win_name, success_crit=30):
         shoulder_loc = None
     
     return frame, success, distance, angle, shoulder_loc
+
+
+def decide_mole_hit(angle, hit_crit):
+    if angle >= hit_crit:
+        return True
+    else:
+        return False

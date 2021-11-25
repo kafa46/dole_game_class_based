@@ -6,8 +6,10 @@ class Mole():
     
     def __init__(
         self, 
-        mole_unit_size_x=500, mole_unit_size_y=500, 
-        mole_unit_loc_x=10, mole_unit_loc_y=10
+        mole_unit_size_x=500, 
+        mole_unit_size_y=500, 
+        mole_unit_loc_x=10, 
+        mole_unit_loc_y=10
     ) -> None:
 
         # Mole image
