@@ -4,7 +4,7 @@ import mediapipe as mp
 from time import sleep
 from WindowManager import WindowManager 
 from MoleManager import MoleManager
-from utils.measure_arm_information import decide_mole_hit, measure_arm_distance, measure_shoulder_elbow_wrist_loc
+from utils.measure_arm_information import measure_arm_distance, measure_shoulder_elbow_wrist_loc
 from utils.Colors import ColorCode
 from utils.PoseLandmarks import LandMarks
 from utils.angle_calculaters import calculate_angle
@@ -167,7 +167,7 @@ class Player():
         # Processing Mole window
         frame_mole_window = mole_manager.generate_grid_on_moleWindow(win_manager)
         mole_unit_loc_list = get_mole_locations(frame_mole_window, self.divide_unit)  # location on original bg_frame (image)
-        mole_manager.create_moles(mole_unit_loc_list)
+        # mole_manager.create_moles(mole_unit_loc_list)
         
         cap = cv2.VideoCapture(0)
         if cap.isOpened():
@@ -226,7 +226,7 @@ class Player():
                     continue
                 
                 # 일정시간 정해진 영역에 머물러 있으면 두더지 때리기 성공으로 처리
-                # 각도 측정이 도저히 안됨... ㅠ
+                #   -> 각도 측정이 도저히 안됨... ㅠ
                 results = pose.process(frame) 
                 index_pos = self.calculate_frame_relative_coordinate(frame, results, self.index_position)
                 if index_pos == None:
@@ -239,7 +239,7 @@ class Player():
                 else:
                     continue
 
-
+                
                 # 전체 이미지 처리 후 반전
                 frame_player = cv2.flip(frame_player, 1)
                 cv2.imshow(win_manager.window_names['Player'], frame_player)
