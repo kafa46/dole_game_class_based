@@ -7,9 +7,14 @@ def mole_show_up(
     hpos=10, vpos=10, 
     img_top_x=300, img_top_y=300, 
     img_bg_x=800, img_bg_y=600,
-    moleSwitch=True
+    mole_switch=True
 ):
     '''
+    Overlay top image (top_img) on top of background image (img_bg)
+    using top and background image coordinations (locations).
+    This function will return overlayed image (cv2.imread).
+    Note: This function will work only when the mole_swithc is True.
+    
     Referenced Blogs: 
         1. (Main Blog) https://bit.ly/3rec0Cg
         2. https://bit.ly/3nWDiek
@@ -29,14 +34,14 @@ def mole_show_up(
         img_bg_x [int]: optional, x value (length) of background image
         img_bg_y [int]: optional, y value (length) of background image
 
-        moleSwitch [bool]: if true, return overlayed image. 
+        mole_switch [bool]: if true, return overlayed image. 
                            Otherwise do nothing
     
     return
         overlayed_img [cv2 image]: overlayed image with forground on background image
     '''    
     
-    if moleSwitch:
+    if mole_switch:
         
         # 배경 이미지 크기 조정
         img_bg_resized = cv2.resize(img_bg, (img_bg_x, img_bg_y), cv2.INTER_CUBIC)

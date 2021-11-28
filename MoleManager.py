@@ -1,14 +1,13 @@
 
 from time import sleep
 import cv2
-import numpy as np
 
-from WindowManager import WindowManager
 from utils.Colors import ColorCode
-from Mole import Mole
 
 class MoleManager():
-    def __init__(self, bg_screen_size, divide_unit=3) -> None:
+    '''
+    '''
+    def __init__(self, bg_screen_size, divide_unit) -> None:
         self.divide_unit = divide_unit
         self.win_name = 'Mole'
         self.bg_frame =  cv2.imread('./imgs/bg_yellow.png', cv2.IMREAD_COLOR)
@@ -16,14 +15,19 @@ class MoleManager():
         self.mole_img = cv2.imread('./imgs/mole_jklee.jpg', cv2.IMREAD_COLOR)
         self.show_up_time = 1
         self.bg_screen_size = bg_screen_size
-            
-    def generate_grid_on_moleWindow(self, win_manager):
-        
-        # get window size
+
+    def create_background_image(self, win_manager):
         win_height = win_manager.windows_info[self.win_name]['height']
         win_width = win_manager.windows_info[self.win_name]['width']
         
-        frame_height, frame_width, _ = self.bg_frame.shape
+        bg_frame = cv2.resize(self.bg_frame, (win_height, win_width), cv2.INTER_CUBIC)
+        
+        return bg_frame
+        
+
+    def draw_grids_on_mole_window(self, frame):
+        
+        frame_height, frame_width, _ = frame.shape
         # print(f'height: {frame_height}, width: {frame_width}')
         
         # Calculate unit-distance 
@@ -33,7 +37,7 @@ class MoleManager():
         # Draw Horizontal lines
         for x in range(1, self.divide_unit):
                 cv2.line(
-                self.bg_frame, 
+                frame, 
                 (0, int(unit_dist_y * x)), 
                 (frame_width, int(unit_dist_y * x)), 
                 ColorCode.RED, 
@@ -42,39 +46,13 @@ class MoleManager():
         # Draw vertical lines
         for x in range(1, self.divide_unit):
             cv2.line(
-                self.bg_frame, 
+                frame, 
                 (int(unit_dist_x * x), 0), 
                 (int(unit_dist_x * x), frame_height), 
                 ColorCode.RED, 
             )    
         
-        return self.bg_frame
-
-        
-    def create_moles(self, mole_locations):
-        ''' 
-        Compute mole locations, Create required moles
-        Args:
-            mole_num [int]: the number of moles in this game
-            mole_locations [list]: [((x_start, x_end), (y_start, y_end)), ... ]
-        '''
-        mole_list = []
-        for idx,  (x_range, y_range)  in enumerate(mole_locations):
-            mole = Mole(
-                x_start=x_range[0],
-                x_end=x_range[1],
-                y_start=y_range[0],
-                y_end=y_range[1],
-                mole_img=self.mole_img,
-                mole_id=idx,
-                show_up_time=self.show_up_time,
-                bg_img=self.bg_frame,
-                bg_screen_size=self.bg_screen_size
-            )
-            mole_list.append(mole)
-        self.mole_list = mole_list
-        
-            
+        return frame
 
 
 if __name__=='__main__':

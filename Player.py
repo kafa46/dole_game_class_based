@@ -9,14 +9,14 @@ from utils.Colors import ColorCode
 from utils.PoseLandmarks import LandMarks
 from utils.angle_calculaters import calculate_angle
 from utils.get_player_grid_unit_id import get_grid_unit_id
-from utils.get_mole_unit_locations import get_mole_locations
+from utils.get_mole_unit_locations import get_grid_locations, get_grid_unit_distace
+from utils.mole_show_up import mole_show_up
 
 mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
 
 class Player():
-    def __init__(self, num_moles=3, divide_units=3, arm_position='right') -> None:
-        self.num_moles = num_moles
+    def __init__(self, divide_units=2, arm_position='left') -> None:
         self.divide_unit = divide_units
         self.max_angle = 160
         self.min_angle = 30
@@ -32,7 +32,7 @@ class Player():
         self.prev_index_loc = None
         self.success_crit_for_hit_mole = 100
         
-        # 좌, 우 팔 선택에 따라 반전
+        # 좌/우 팔 선택에 따라 해당 좌표 정보를 할당
         self.arm_position = arm_position
         if self.arm_position == 'right':
             self.shoulder_position = LandMarks.RIGHT_SHOULDER
@@ -50,16 +50,18 @@ class Player():
         
     
     def calculate_frame_relative_coordinate(self, frame, results, idx):
-        """[summary]
+        """cv.image.shape에서 리턴하는 상대적 좌표를 입력으로 주어진
+        frame 이미지에 적용하여 이미지상에 적용할 수 있는 좌표를 리턴합니다.
 
         Args:
-            frame (numpy array): img, in case we use fram from webcam
-            results ([type]): [description]
-            idx ([type]): [description]
+            frame (numpy array): img (cv2 object), in case we use fram from webcam
+            results (mediapipe pose object): object after processing 'mediapipe의 pose.process(frame)'
+            idx (int): the target landmark index in result object
 
         Returns:
-            tuple: (loc_x, loc_y), relative location of frame
+            loc_x, loc_y (tuple): relative location of frame
         """     
+        
         try:
             x = results.pose_landmarks.landmark[idx].x
             y = results.pose_landmarks.landmark[idx].y
@@ -73,7 +75,7 @@ class Player():
         
         return loc_x, loc_y
 
-    def draw_excercise_grid(self, frame, distance, monitor_info, train_arm_pos='right'):
+    def draw_excercise_grid(self, frame):
 
         # Get frame dimension from image (frame)
         frame_height, frame_width, _ = frame.shape # we don't use channel info
@@ -104,7 +106,6 @@ class Player():
 
         return frame
 
-
     def draw_shoulder_and_hand_loc(self, frame):
         try:
             results = pose.process(frame) 
@@ -113,14 +114,22 @@ class Player():
 
         # Calculate soulder location
         try:
-            shoulder_loc = self.calculate_frame_relative_coordinate(frame, results, self.shoulder_position)
+            shoulder_loc = self.calculate_frame_relative_coordinate(
+                frame, 
+                results, 
+                self.shoulder_position
+            )
             self.prev_shoulder_loc = shoulder_loc
         except:
             shoulder_loc = self.prev_shoulder_loc
 
         # Calculate coordinate of current index location
         try:
-            index_loc = self.calculate_frame_relative_coordinate(frame, results, self.index_position)
+            index_loc = self.calculate_frame_relative_coordinate(
+                frame, 
+                results, 
+                self.index_position
+            )
         except:
             index_loc = self.prev_index_loc
         
@@ -162,12 +171,20 @@ class Player():
             win_manager.windows_info['Mole']['width'],
         ) 
 
-        mole_manager = MoleManager(bg_screen_size)
+        mole_manager = MoleManager(bg_screen_size, divide_unit=self.divide_unit)
         
         # Processing Mole window
-        frame_mole_window = mole_manager.generate_grid_on_moleWindow(win_manager)
-        mole_unit_loc_list = get_mole_locations(frame_mole_window, self.divide_unit)  # location on original bg_frame (image)
-        # mole_manager.create_moles(mole_unit_loc_list)
+        frame_mole_window = mole_manager.create_background_image(win_manager)
+        
+        mole_unit_loc_list = get_grid_locations(
+            frame_mole_window, 
+            self.divide_unit        
+        )
+        
+        unit_distances = get_grid_unit_distace(
+            frame_mole_window, 
+            self.divide_unit
+        )
         
         cap = cv2.VideoCapture(0)
         if cap.isOpened():
@@ -197,17 +214,13 @@ class Player():
                     continue
             
             else:
-                # Processing Mole window
-                frame_mole_window = mole_manager.generate_grid_on_moleWindow(win_manager)
-                cv2.imshow(win_manager.window_names['Mole'], frame_mole_window)
-
+                
                 # Processing Player window
                 current_monitor_info = win_manager.windows_info['Player']
-                frame_player = self.draw_excercise_grid(frame, self.distance, current_monitor_info)
+                frame_player = self.draw_excercise_grid(frame)
                 frame_player = self.draw_shoulder_and_hand_loc(frame)
                 if frame_player is None:
                     continue
-                
                 
                 # Compute arm angle -> do actions with mole image
                 shoulder_loc, elbow_loc, wrist_loc, index_loc = measure_shoulder_elbow_wrist_loc(
@@ -235,7 +248,19 @@ class Player():
                 
                 if pane_id != None:
                     print(f'mole_pane_id: {pane_id}\n')
-                    
+                    mole_img = mole_show_up(
+                        img_top=mole_manager.mole_img,
+                        img_bg=mole_manager.bg_frame,
+                        hpos=int(mole_unit_loc_list[pane_id][0][0]), 
+                        vpos=int(mole_unit_loc_list[pane_id][1][0]),
+                        img_top_x=unit_distances[0],
+                        img_top_y=unit_distances[1],
+                        img_bg_x=bg_screen_size[0],
+                        img_bg_y=bg_screen_size[1],
+                    )
+                    mole_img = mole_manager.draw_grids_on_mole_window(mole_img)
+                    mole_img = cv2.flip(mole_img, 1)
+                    cv2.imshow(win_manager.window_names['Mole'], mole_img)
                 else:
                     continue
 

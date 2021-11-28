@@ -54,4 +54,3 @@ def put_numCount(frame, numCount, loc=(70, 50), label_text='Num_Count', counterI
         fontScale=3,
         color=color_numCount,
     )    
-
