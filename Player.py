@@ -4,6 +4,7 @@ import mediapipe as mp
 from time import sleep
 from WindowManager import WindowManager 
 from MoleManager import MoleManager
+from utils.Criteria import Criteria
 from utils.measure_arm_information import measure_arm_distance, measure_shoulder_elbow_wrist_loc
 from utils.Colors import ColorCode
 from utils.PoseLandmarks import LandMarks
@@ -30,7 +31,6 @@ class Player():
         self.grid_color = ColorCode.GRID_COLOR
         self.prev_shoulder_loc = None
         self.prev_index_loc = None
-        self.success_crit_for_hit_mole = 100
         
         # 좌/우 팔 선택에 따라 해당 좌표 정보를 할당
         self.arm_position = arm_position
@@ -225,7 +225,7 @@ class Player():
                 # Compute arm angle -> do actions with mole image
                 shoulder_loc, elbow_loc, wrist_loc, index_loc = measure_shoulder_elbow_wrist_loc(
                     frame, 
-                    success_crit=self.success_crit_for_hit_mole
+                    success_crit=Criteria.SUCCESS_ARM_ANGLE_TO_HIT_MOLE
                 )
                 if shoulder_loc and elbow_loc and wrist_loc:
                     angle = calculate_angle(
@@ -240,6 +240,8 @@ class Player():
                 
                 # 일정시간 정해진 영역에 머물러 있으면 두더지 때리기 성공으로 처리
                 #   -> 각도 측정이 도저히 안됨... ㅠ
+                #   대안 1: 임준환 멀티 카메라 심험결과 적용
+                #   대안 2: mediapipe 3D coordinate를 활용한 실험
                 results = pose.process(frame) 
                 index_pos = self.calculate_frame_relative_coordinate(frame, results, self.index_position)
                 if index_pos == None:
