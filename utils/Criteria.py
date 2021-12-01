@@ -4,4 +4,4 @@ class Criteria():
     SUCCESS_ARM_ANGLE_TO_HIT_MOLE = 100 
 
     # 두더지 hit을 위해 특정 pane에 머물러야 하는 최소 시간
-    MIN_STAY_TIME_IN_PANE = 2  
+    MIN_STAY_TIME_IN_PANE = 2.0  

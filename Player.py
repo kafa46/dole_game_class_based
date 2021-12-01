@@ -1,10 +1,12 @@
 import cv2
+from random import randint
 import mediapipe as mp
 
 from time import sleep
 from WindowManager import WindowManager 
 from MoleManager import MoleManager
 from utils.Criteria import Criteria
+from utils.Timer import Timer
 from utils.measure_arm_information import measure_arm_distance, measure_shoulder_elbow_wrist_loc
 from utils.Colors import ColorCode
 from utils.PoseLandmarks import LandMarks
@@ -16,8 +18,10 @@ from utils.mole_show_up import mole_show_up
 mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
 
+IS_FIRST = True
+
 class Player():
-    def __init__(self, divide_units=2, arm_position='left') -> None:
+    def __init__(self, divide_units=3, arm_position='right') -> None:
         self.divide_unit = divide_units
         self.max_angle = 160
         self.min_angle = 30
@@ -31,6 +35,8 @@ class Player():
         self.grid_color = ColorCode.GRID_COLOR
         self.prev_shoulder_loc = None
         self.prev_index_loc = None
+        self.mole_hit_success = False
+        self.current_pane_id = None
         
         # 좌/우 팔 선택에 따라 해당 좌표 정보를 할당
         self.arm_position = arm_position
@@ -172,6 +178,7 @@ class Player():
         ) 
 
         mole_manager = MoleManager(bg_screen_size, divide_unit=self.divide_unit)
+        pane_timer = Timer()
         
         # Processing Mole window
         frame_mole_window = mole_manager.create_background_image(win_manager)
@@ -241,23 +248,45 @@ class Player():
                 # 일정시간 정해진 영역에 머물러 있으면 두더지 때리기 성공으로 처리
                 #   -> 각도 측정이 도저히 안됨... ㅠ
                 #   대안 1: 임준환 멀티 카메라 심험결과 적용
-                #   대안 2: mediapipe 3D coordinate를 활용한 실험
+                #   대안 2: mediapipe 3D coordinate를 활용한 추가 실험
                 results = pose.process(frame) 
-                index_pos = self.calculate_frame_relative_coordinate(frame, results, self.index_position)
+                index_pos = self.calculate_frame_relative_coordinate(
+                    frame, results, self.index_position,
+                )
                 if index_pos == None:
                     continue
-                pane_id = get_grid_unit_id(frame, self.divide_unit, index_pos)
                 
-                if pane_id != None:
-                    print(f'mole_pane_id: {pane_id}\n')
+                if IS_FIRST:
+                    self.current_pane_id = get_grid_unit_id(frame, self.divide_unit, index_pos)
+                else:
+                    pass
+                
+                if self.current_pane_id != None:
+                    # 두더지가 현재 pane에서 머물러 있는 시간을 체크하고,
+                    # 일정 시간 (Criteria.SUCCESS_ARM_ANGLE_TO_HIT_MOLE) 이상 지난 경우
+                    # pane ID를 랜덤하게 추출하여 두더지 위치 변경
+                    pane_stay_time = pane_timer.update(self.current_pane_id)
+                    self.mole_hit_success = pane_stay_time >= Criteria.MIN_STAY_TIME_IN_PANE
+                    print('mole_pane_id: {0}\tpane_stay_time: {1:3.1f}\thit_success: {2}'.format(
+                            self.mole_hit_success, pane_stay_time, self.mole_hit_success
+                        )
+                    )
+                    
+                    if self.mole_hit_success:
+                        next_pane_id = randint(0, self.divide_unit**2 - 1)
+                        while self.mole_hit_success != next_pane_id:
+                            next_pane_id = randint(0, self.divide_unit**2 - 1)
+                        self.current_pane_id = next_pane_id
+                        self.mole_hit_success = False
+
                     mole_img = mole_show_up(
                         img_top=mole_manager.mole_img,
                         img_bg=mole_manager.bg_frame,
-                        hpos=int(mole_unit_loc_list[pane_id][0][0]), 
-                        vpos=int(mole_unit_loc_list[pane_id][1][0]),
-                        img_top_x=unit_distances[0],
+                        hpos=int(mole_unit_loc_list[self.current_pane_id][0][0]), 
+                        vpos=int(mole_unit_loc_list[self.current_pane_id][1][0]),
+                        img_top_x=unit_distances[0], 
                         img_top_y=unit_distances[1],
-                        img_bg_x=bg_screen_size[0],
+                        img_bg_x=bg_screen_size[0],  
                         img_bg_y=bg_screen_size[1],
                     )
                     mole_img = mole_manager.draw_grids_on_mole_window(mole_img)
