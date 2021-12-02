@@ -18,8 +18,6 @@ from utils.mole_show_up import mole_show_up
 mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
 
-IS_FIRST = True
-
 class Player():
     def __init__(self, divide_units=3, arm_position='right') -> None:
         self.divide_unit = divide_units
@@ -37,6 +35,8 @@ class Player():
         self.prev_index_loc = None
         self.mole_hit_success = False
         self.current_pane_id = None
+        self.target_pane_id = None
+        self.IS_FIRST = True
         
         # 좌/우 팔 선택에 따라 해당 좌표 정보를 할당
         self.arm_position = arm_position
@@ -167,6 +167,8 @@ class Player():
     
     def play_game(self,) -> None:
         
+        MOVE_TO_NEW_LOCATION = True
+        
         win_manager = WindowManager()
         win_manager.get_screenInfo()
         win_manager.display_monitorInfo()
@@ -205,9 +207,14 @@ class Player():
             if not self.success:
                 frame = cv2.flip(frame, 1)
                 cv2.imshow(self.player_win_name, frame)
-                _ , self.success, self.distance, self.angle, shoulder_loc = measure_arm_distance(frame, self.player_win_name)
+                _ , self.success, self.distance, self.angle, shoulder_loc = measure_arm_distance(
+                    frame, self.
+                    player_win_name
+                )
+                
                 if not self.success or not self.distance or not shoulder_loc:
                     continue
+                
                 elif self.success and self.distance and self.angle and shoulder_loc:
                     self.success = True
                     try:
@@ -256,34 +263,51 @@ class Player():
                 if index_pos == None:
                     continue
                 
-                if IS_FIRST:
-                    self.current_pane_id = get_grid_unit_id(frame, self.divide_unit, index_pos)
-                else:
-                    pass
+                self.current_pane_id = get_grid_unit_id(frame, self.divide_unit, index_pos)
+
+                if self.IS_FIRST:
+                    self.target_pane_id = self.current_pane_id
+                    self.IS_FIRST = False
                 
                 if self.current_pane_id != None:
                     # 두더지가 현재 pane에서 머물러 있는 시간을 체크하고,
                     # 일정 시간 (Criteria.SUCCESS_ARM_ANGLE_TO_HIT_MOLE) 이상 지난 경우
                     # pane ID를 랜덤하게 추출하여 두더지 위치 변경
-                    pane_stay_time = pane_timer.update(self.current_pane_id)
+                    if self.current_pane_id == self.target_pane_id:
+                        pane_stay_time = pane_timer.update(self.target_pane_id)
+                    else:
+                        pane_stay_time = 0.0
+
                     self.mole_hit_success = pane_stay_time >= Criteria.MIN_STAY_TIME_IN_PANE
-                    print('mole_pane_id: {0}\tpane_stay_time: {1:3.1f}\thit_success: {2}'.format(
-                            self.mole_hit_success, pane_stay_time, self.mole_hit_success
-                        )
-                    )
                     
                     if self.mole_hit_success:
-                        next_pane_id = randint(0, self.divide_unit**2 - 1)
-                        while self.mole_hit_success != next_pane_id:
-                            next_pane_id = randint(0, self.divide_unit**2 - 1)
-                        self.current_pane_id = next_pane_id
-                        self.mole_hit_success = False
-
+                        MOVE_TO_NEW_LOCATION = True
+                    else:
+                        MOVE_TO_NEW_LOCATION = False
+                    
+                    print('Current Pane: {0} Target Pane: {1} \
+                        pane_stay_time: {2:3.1f} \ hit_success: {3}'.format(
+                            self.current_pane_id, 
+                            self.target_pane_id,
+                            pane_stay_time, self.
+                            mole_hit_success,
+                        ), 
+                    )
+                    
+                    if MOVE_TO_NEW_LOCATION: 
+                        while True:
+                            next_pane_id = randint(0, self.divide_unit**2 - 1)    
+                            if self.target_pane_id != next_pane_id:
+                                self.current_pane_id = self.target_pane_id
+                                self.target_pane_id = next_pane_id
+                                # MOVE_TO_NEW_LOCATION = False
+                                break
+                        
                     mole_img = mole_show_up(
                         img_top=mole_manager.mole_img,
                         img_bg=mole_manager.bg_frame,
-                        hpos=int(mole_unit_loc_list[self.current_pane_id][0][0]), 
-                        vpos=int(mole_unit_loc_list[self.current_pane_id][1][0]),
+                        hpos=int(mole_unit_loc_list[self.target_pane_id][0][0]), 
+                        vpos=int(mole_unit_loc_list[self.target_pane_id][1][0]),
                         img_top_x=unit_distances[0], 
                         img_top_y=unit_distances[1],
                         img_bg_x=bg_screen_size[0],  
@@ -292,11 +316,12 @@ class Player():
                     mole_img = mole_manager.draw_grids_on_mole_window(mole_img)
                     mole_img = cv2.flip(mole_img, 1)
                     cv2.imshow(win_manager.window_names['Mole'], mole_img)
+                
                 else:
                     continue
 
                 
-                # 전체 이미지 처리 후 반전
+                # 전체 이미지 처리 후 Player 화면 반전
                 frame_player = cv2.flip(frame_player, 1)
                 cv2.imshow(win_manager.window_names['Player'], frame_player)
                 
