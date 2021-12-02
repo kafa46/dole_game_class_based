@@ -81,6 +81,7 @@ class Player():
         
         return loc_x, loc_y
 
+
     def draw_excercise_grid(self, frame):
 
         # Get frame dimension from image (frame)
@@ -111,6 +112,7 @@ class Player():
         # cv2.imshow(self.player_win_name, frame)
 
         return frame
+
 
     def draw_shoulder_and_hand_loc(self, frame):
         try:
@@ -165,10 +167,9 @@ class Player():
 
         return frame
     
+
     def play_game(self,) -> None:
-        
         MOVE_TO_NEW_LOCATION = True
-        
         win_manager = WindowManager()
         win_manager.get_screenInfo()
         win_manager.display_monitorInfo()
@@ -196,12 +197,12 @@ class Player():
         )
         
         cap = cv2.VideoCapture(0)
+
         if cap.isOpened():
             print(f"\n웹캠 작동 상태: {cap.isOpened()}")
             print('width: {}, height : {}'.format(cap.get(3), cap.get(4)))
         
         while cv2.waitKey(33) < 0:
-            
             _ , frame = cap.read()
 
             if not self.success:
@@ -228,7 +229,6 @@ class Player():
                     continue
             
             else:
-                
                 # Processing Player window
                 current_monitor_info = win_manager.windows_info['Player']
                 frame_player = self.draw_excercise_grid(frame)
@@ -241,6 +241,7 @@ class Player():
                     frame, 
                     success_crit=Criteria.SUCCESS_ARM_ANGLE_TO_HIT_MOLE
                 )
+
                 if shoulder_loc and elbow_loc and wrist_loc:
                     angle = calculate_angle(
                         index_loc[self.arm_position],
@@ -248,7 +249,7 @@ class Player():
                         elbow_loc[self.arm_position],
                         shoulder_loc[self.arm_position],
                     )
-                    # print('angle {0}: {1:5.1f}'.format(self.arm_position, angle))
+                
                 else:
                     continue
                 
@@ -257,9 +258,8 @@ class Player():
                 #   대안 1: 임준환 멀티 카메라 심험결과 적용
                 #   대안 2: mediapipe 3D coordinate를 활용한 추가 실험
                 results = pose.process(frame) 
-                index_pos = self.calculate_frame_relative_coordinate(
-                    frame, results, self.index_position,
-                )
+                index_pos = self.calculate_frame_relative_coordinate(frame, results, self.index_position,)
+                
                 if index_pos == None:
                     continue
                 
