@@ -7,6 +7,7 @@ from WindowManager import WindowManager
 from MoleManager import MoleManager
 from utils.Criteria import Criteria
 from utils.Timer import Timer
+from utils.angle_gage import angleGage
 from utils.measure_arm_information import measure_arm_distance, measure_shoulder_elbow_wrist_loc
 from utils.Colors import ColorCode
 from utils.PoseLandmarks import LandMarks
@@ -83,7 +84,6 @@ class Player():
 
 
     def draw_excercise_grid(self, frame):
-
         # Get frame dimension from image (frame)
         frame_height, frame_width, _ = frame.shape # we don't use channel info
 
@@ -108,8 +108,6 @@ class Player():
                 (int(unit_dist_x * x), frame_height), 
                 self.grid_color, # green line
             )        
-
-        # cv2.imshow(self.player_win_name, frame)
 
         return frame
 
@@ -196,16 +194,17 @@ class Player():
             self.divide_unit
         )
         
+        # Camera open and keep track cam image
         cap = cv2.VideoCapture(0)
 
-        if cap.isOpened():
-            print(f"\n웹캠 작동 상태: {cap.isOpened()}")
-            print('width: {}, height : {}'.format(cap.get(3), cap.get(4)))
-        
         while cv2.waitKey(33) < 0:
             _ , frame = cap.read()
-
+            
+            # 초기 배경화면, 준비 자세 처리
             if not self.success:
+                # mole grid window에 초기 화면 뿌리기
+                cv2.imshow(win_manager.window_names['Mole'], mole_manager.start_img)
+                
                 frame = cv2.flip(frame, 1)
                 cv2.imshow(self.player_win_name, frame)
                 _ , self.success, self.distance, self.angle, shoulder_loc = measure_arm_distance(
@@ -215,7 +214,6 @@ class Player():
                 
                 if not self.success or not self.distance or not shoulder_loc:
                     continue
-                
                 elif self.success and self.distance and self.angle and shoulder_loc:
                     self.success = True
                     try:
@@ -264,7 +262,9 @@ class Player():
                     continue
                 
                 self.current_pane_id = get_grid_unit_id(frame, self.divide_unit, index_pos)
-
+                if not self.current_pane_id:
+                    continue
+                
                 if self.IS_FIRST:
                     self.target_pane_id = self.current_pane_id
                     self.IS_FIRST = False
@@ -285,12 +285,8 @@ class Player():
                     else:
                         MOVE_TO_NEW_LOCATION = False
                     
-                    print('Current Pane: {0} Target Pane: {1} \
-                        pane_stay_time: {2:3.1f} \ hit_success: {3}'.format(
-                            self.current_pane_id, 
-                            self.target_pane_id,
-                            pane_stay_time, self.
-                            mole_hit_success,
+                    print('Current Pane: {0} Target Pane: {1} Pane Stay: {2:3.1f} Hit: {3}'.format(
+                            self.current_pane_id, self.target_pane_id, pane_stay_time, self.mole_hit_success,
                         ), 
                     )
                     
@@ -317,20 +313,21 @@ class Player():
                     mole_img = cv2.flip(mole_img, 1)
                     cv2.imshow(win_manager.window_names['Mole'], mole_img)
                 
-                else:
-                    continue
-
+                # Pane ID를 추출하지 못하면 아무일도 하지 않고 계속 진행
+                else: 
+                    continue  
                 
-                # 전체 이미지 처리 후 Player 화면 반전
+                # # Player 화면 처리 -> 전체 이미지 처리 후 반전(좌우 flip)
                 frame_player = cv2.flip(frame_player, 1)
                 cv2.imshow(win_manager.window_names['Player'], frame_player)
                 
-
+                # 팔 각도 측정 게이지 추가
+                # frame_player_with_gage_left = angleGage(angle, 80, frame_player)
+                # frame_player_with_gage_left_right = angleGage(angle, 720, frame_player_with_gage_left)
+                # frame_player_with_gage_left_right = cv2.flip(frame_player_with_gage_left_right, 1)
+                # cv2.imshow(win_manager.window_names['Player'], frame_player_with_gage_left_right)
+                
+                
 if __name__=='__main__':
-    # win_manager = WindowManager()
-    # win_manager.get_screenInfo()
-    # win_manager.display_monitorInfo()
-    # #win_manager.select_monitor()
-    # win_manager.create_windows()
     player = Player()
     player.play_game()
