@@ -1,6 +1,7 @@
 import cv2
 from random import randint
 import mediapipe as mp
+import numpy as np
 
 from time import sleep
 from WindowManager import WindowManager 
@@ -15,6 +16,8 @@ from utils.angle_calculaters import calculate_angle
 from utils.get_player_grid_unit_id import get_grid_unit_id
 from utils.get_mole_unit_locations import get_grid_locations, get_grid_unit_distace
 from utils.mole_show_up import mole_show_up
+
+from remove_background_module import remove_background
 
 mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
@@ -31,7 +34,7 @@ class Player():
         self.success = False
         self.distance = None # will be stored with tuple (left, right distance info)
         self.angle = None # will be stored with tuple (left, right angle info)
-        self.grid_color = ColorCode.GRID_COLOR
+        self.grid_color = ColorCode.RED
         self.prev_shoulder_loc = None
         self.prev_index_loc = None
         self.mole_hit_success = False
@@ -193,9 +196,10 @@ class Player():
             frame_mole_window, 
             self.divide_unit
         )
+
         
         # Camera open and keep track cam image
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
         while cv2.waitKey(33) < 0:
             _ , frame = cap.read()
@@ -204,8 +208,9 @@ class Player():
             if not self.success:
                 # mole grid window에 초기 화면 뿌리기
                 cv2.imshow(win_manager.window_names['Mole'], mole_manager.start_img)
-                
+                #####################에러 두줄
                 frame = cv2.flip(frame, 1)
+
                 cv2.imshow(self.player_win_name, frame)
                 _ , self.success, self.distance, self.angle, shoulder_loc = measure_arm_distance(
                     frame, self.
@@ -215,7 +220,7 @@ class Player():
                 if not self.success or not self.distance or not shoulder_loc:
                     continue
                 elif self.success and self.distance and self.angle and shoulder_loc:
-                    self.success = True
+                    self.success = True           # 배경없애는 코드 넣기
                     try:
                         results = pose.process(frame) 
                         self.prev_shoulder_loc = self.calculate_frame_relative_coordinate(
@@ -230,7 +235,6 @@ class Player():
                 # Processing Player window
                 current_monitor_info = win_manager.windows_info['Player']
                 frame_player = self.draw_excercise_grid(frame)
-                frame_player = self.draw_shoulder_and_hand_loc(frame)
                 if frame_player is None:
                     continue
                 
@@ -319,7 +323,20 @@ class Player():
                 
                 # # Player 화면 처리 -> 전체 이미지 처리 후 반전(좌우 flip)
                 frame_player = cv2.flip(frame_player, 1)
-                cv2.imshow(win_manager.window_names['Player'], frame_player)
+                output_image = frame_player
+
+                output_image = remove_background(frame_player)
+                output_image = self.draw_shoulder_and_hand_loc(output_image)
+                output_image = self.draw_excercise_grid(output_image)
+                
+                output_image = cv2.flip(output_image, 1)
+
+                cv2.imshow(win_manager.window_names['Player'], output_image)
+
+
+
+
+            # cap.release()
                 
                 # 팔 각도 측정 게이지 추가
                 # frame_player_with_gage_left = angleGage(angle, 80, frame_player)
