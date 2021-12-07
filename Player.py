@@ -14,12 +14,13 @@ from utils.angle_calculaters import calculate_angle
 from utils.get_player_grid_unit_id import get_grid_unit_id
 from utils.get_mole_unit_locations import get_grid_locations, get_grid_unit_distace
 from utils.mole_show_up import mole_show_up
+from utils.remove_background import remove_bg_mediapipe_selfie
 
 mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
 
 class Player():
-    def __init__(self, divide_units=3, arm_position='right') -> None:
+    def __init__(self, divide_units=3, arm_position='right', selfie_mode=True) -> None:
         self.divide_unit = divide_units
         self.max_angle = 160
         self.min_angle = 30
@@ -37,6 +38,7 @@ class Player():
         self.current_pane_id = None
         self.target_pane_id = None
         self.IS_FIRST = True
+        self.SELFIE_MODE = selfie_mode
         
         # 좌/우 팔 선택에 따라 해당 좌표 정보를 할당
         self.arm_position = arm_position
@@ -205,6 +207,9 @@ class Player():
             _ , frame = cap.read()
 
             if not self.success:
+                # mole grid window에 초기 화면 뿌리기
+                cv2.imshow(win_manager.window_names['Mole'], mole_manager.start_img)
+
                 frame = cv2.flip(frame, 1)
                 cv2.imshow(self.player_win_name, frame)
                 _ , self.success, self.distance, self.angle, shoulder_loc = measure_arm_distance(
@@ -261,6 +266,7 @@ class Player():
                     frame, results, self.index_position,
                 )
                 if index_pos == None:
+                    print('No index_pos detected!')
                     continue
                 
                 self.current_pane_id = get_grid_unit_id(frame, self.divide_unit, index_pos)
@@ -316,16 +322,16 @@ class Player():
                     mole_img = mole_manager.draw_grids_on_mole_window(mole_img)
                     mole_img = cv2.flip(mole_img, 1)
                     cv2.imshow(win_manager.window_names['Mole'], mole_img)
+
                 
                 else:
+                    print(f'self.current_pane_id: {self.current_pane_id}')
                     continue
 
-                
-                # 전체 이미지 처리 후 Player 화면 반전
                 frame_player = cv2.flip(frame_player, 1)
                 cv2.imshow(win_manager.window_names['Player'], frame_player)
-                
-
+            
+            
 if __name__=='__main__':
     # win_manager = WindowManager()
     # win_manager.get_screenInfo()
