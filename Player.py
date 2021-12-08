@@ -351,7 +351,15 @@ class Player():
                 else:
                     print(f'self.current_pane_id: {self.current_pane_id}')
                     continue
-
+                
+                if self.SELFIE_MODE:
+                    # frame_player = remove_bg_mediapipe_selfie(frame)
+                    # 배경제거 모드일 경우, 진경이 코드를 추가해야 함
+                    # 현재 임시로 비워둔 상태
+                    # 함수를 util 디렉토리의 remove_background.py 모듈의
+                    #   --> remove_bg_mediapipe_selfie(image) 함수로 이동하여 추가해 놨음.
+                    pass
+                
                 frame_player = self.draw_shoulder_and_hand_loc(frame)
                 frame_player = self.draw_excercise_grid(frame_player)
                 frame_player = cv2.flip(frame_player, 1)
