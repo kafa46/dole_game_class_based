@@ -4,8 +4,10 @@ import mediapipe as mp
 import numpy as np
 
 from time import sleep
+from InfoManager import InformationManager
 from WindowManager import WindowManager 
 from MoleManager import MoleManager
+from InfoManager import InformationManager
 from utils.Criteria import Criteria
 from utils.Timer import Timer
 from utils.angle_gage import angleGage
@@ -24,7 +26,7 @@ mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
 
 class Player():
-    def __init__(self, divide_units=3, arm_position='right', selfie_mode=True) -> None:
+    def __init__(self, divide_units=3, arm_position='right', selfie_mode=False, goal_count_to_clear=10):
         self.divide_unit = divide_units
         self.max_angle = 160
         self.min_angle = 30
@@ -43,6 +45,8 @@ class Player():
         self.target_pane_id = None
         self.IS_FIRST = True
         self.SELFIE_MODE = selfie_mode
+        self.MISSION_COMPLETE = False
+        self.GOAL_COUNT_TO_CLEAR = goal_count_to_clear
         
         # 좌/우 팔 선택에 따라 해당 좌표 정보를 할당
         self.arm_position = arm_position
@@ -171,20 +175,27 @@ class Player():
         return frame
     
 
-    def play_game(self,) -> None:
+    def play_game(self,):
         MOVE_TO_NEW_LOCATION = True
         win_manager = WindowManager()
         win_manager.get_screenInfo()
         win_manager.display_monitorInfo()
         win_manager.create_windows()
         self.player_win_name = win_manager.window_names['Player']
-        bg_screen_size = (
+        
+        bg_window_size = (
             win_manager.windows_info['Mole']['height'],
             win_manager.windows_info['Mole']['width'],
         ) 
 
-        mole_manager = MoleManager(bg_screen_size, divide_unit=self.divide_unit)
+        info_window_size = (
+            win_manager.windows_info['Information']['height'],
+            win_manager.windows_info['Information']['width'],
+        )
+        
+        mole_manager = MoleManager(bg_window_size, divide_unit=self.divide_unit)
         pane_timer = Timer()
+        info_manager = InformationManager(self.GOAL_COUNT_TO_CLEAR)
         
         # Processing Mole window
         frame_mole_window = mole_manager.create_background_image(win_manager)
@@ -202,22 +213,23 @@ class Player():
         
         # Camera open and keep track cam image
         cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-
+        
         while cv2.waitKey(33) < 0:
             _ , frame = cap.read()
             
             # 초기 배경화면, 준비 자세 처리
             if not self.success:
+                # 미션을 완성하고 다시 반복되는 경우는 다른 이미지 출력
+                if self.MISSION_COMPLETE: 
+                    cv2.imshow(win_manager.window_names['Mole'], mole_manager.mission_completed_img)
+                
                 # mole grid window에 초기 화면 뿌리기
-                cv2.imshow(win_manager.window_names['Mole'], mole_manager.start_img)
-<<<<<<< HEAD
-                #####################에러 두줄
-=======
-
->>>>>>> ae271d482789144a0563dc15f16ef4b0425606f8
+                else:  
+                    cv2.imshow(win_manager.window_names['Mole'], mole_manager.start_img)
+                
                 frame = cv2.flip(frame, 1)
-
                 cv2.imshow(self.player_win_name, frame)
+                
                 _ , self.success, self.distance, self.angle, shoulder_loc = measure_arm_distance(
                     frame, self.
                     player_win_name
@@ -226,7 +238,7 @@ class Player():
                 if not self.success or not self.distance or not shoulder_loc:
                     continue
                 elif self.success and self.distance and self.angle and shoulder_loc:
-                    self.success = True           # 배경없애는 코드 넣기
+                    self.success = True
                     try:
                         results = pose.process(frame) 
                         self.prev_shoulder_loc = self.calculate_frame_relative_coordinate(
@@ -240,17 +252,14 @@ class Player():
             else:
                 # Processing Player window
                 current_monitor_info = win_manager.windows_info['Player']
-                frame_player = self.draw_excercise_grid(frame)
-                if frame_player is None:
-                    continue
                 
                 # Compute arm angle -> do actions with mole image
                 shoulder_loc, elbow_loc, wrist_loc, index_loc = measure_shoulder_elbow_wrist_loc(
                     frame, 
                     success_crit=Criteria.SUCCESS_ARM_ANGLE_TO_HIT_MOLE
                 )
-
-                if shoulder_loc and elbow_loc and wrist_loc:
+                
+                if shoulder_loc and elbow_loc and index_loc:
                     angle = calculate_angle(
                         index_loc[self.arm_position],
                         # wrist_loc[self.arm_position],
@@ -288,11 +297,20 @@ class Player():
                         pane_stay_time = pane_timer.update(self.target_pane_id)
                     else:
                         pane_stay_time = 0.0
+                        info_manager.increase_pane_movement() # pane을 이동하면 pane_move_num +1 증가
 
                     self.mole_hit_success = pane_stay_time >= Criteria.MIN_STAY_TIME_IN_PANE
                     
                     if self.mole_hit_success:
                         MOVE_TO_NEW_LOCATION = True
+                        info_manager.increase_hit_number() # 두더지 때리기 성공하면 current_hit_num +1 증가
+                        
+                        # 미션 완료 여부 체크하고, 
+                        # 미션 클리어인 경우 info_manager 리셋
+                        self.MISSION_COMPLETE = info_manager.check_mission_complete()
+                        if self.MISSION_COMPLETE:
+                            info_manager.reset_game()
+                            self.success = False
                     else:
                         MOVE_TO_NEW_LOCATION = False
                     
@@ -303,7 +321,12 @@ class Player():
                     
                     if MOVE_TO_NEW_LOCATION: 
                         while True:
-                            next_pane_id = randint(0, self.divide_unit**2 - 1)    
+                            next_pane_id = randint(0, self.divide_unit**2 - 1)
+                            
+                            # 0번 Pane 위치 이동이 안되어 임시로 회피하도록 설정함
+                            if next_pane_id == 0:
+                                continue
+                            
                             if self.target_pane_id != next_pane_id:
                                 self.current_pane_id = self.target_pane_id
                                 self.target_pane_id = next_pane_id
@@ -317,53 +340,31 @@ class Player():
                         vpos=int(mole_unit_loc_list[self.target_pane_id][1][0]),
                         img_top_x=unit_distances[0], 
                         img_top_y=unit_distances[1],
-                        img_bg_x=bg_screen_size[0],  
-                        img_bg_y=bg_screen_size[1],
+                        img_bg_x=bg_window_size[0],  
+                        img_bg_y=bg_window_size[1],
                     )
                     mole_img = mole_manager.draw_grids_on_mole_window(mole_img)
                     mole_img = cv2.flip(mole_img, 1)
                     cv2.imshow(win_manager.window_names['Mole'], mole_img)
 
                 
-<<<<<<< HEAD
-                # Pane ID를 추출하지 못하면 아무일도 하지 않고 계속 진행
-                else: 
-                    continue  
-                
-                # # Player 화면 처리 -> 전체 이미지 처리 후 반전(좌우 flip)
-                frame_player = cv2.flip(frame_player, 1)
-                output_image = frame_player
-
-                output_image = remove_background(frame_player)
-                output_image = self.draw_shoulder_and_hand_loc(output_image)
-                output_image = self.draw_excercise_grid(output_image)
-                
-                output_image = cv2.flip(output_image, 1)
-
-                cv2.imshow(win_manager.window_names['Player'], output_image)
-
-
-
-
-            # cap.release()
-                
-                # 팔 각도 측정 게이지 추가
-                # frame_player_with_gage_left = angleGage(angle, 80, frame_player)
-                # frame_player_with_gage_left_right = angleGage(angle, 720, frame_player_with_gage_left)
-                # frame_player_with_gage_left_right = cv2.flip(frame_player_with_gage_left_right, 1)
-                # cv2.imshow(win_manager.window_names['Player'], frame_player_with_gage_left_right)
-                
-                
-=======
                 else:
                     print(f'self.current_pane_id: {self.current_pane_id}')
                     continue
 
+                frame_player = self.draw_shoulder_and_hand_loc(frame)
+                frame_player = self.draw_excercise_grid(frame_player)
                 frame_player = cv2.flip(frame_player, 1)
                 cv2.imshow(win_manager.window_names['Player'], frame_player)
+                
+                frame_info = info_manager.display_game_info(
+                    window_size_height=info_window_size[0],
+                    window_size_width=info_window_size[1]
+                    
+                )
+                cv2.imshow(win_manager.window_names['Information'], frame_info)
             
             
->>>>>>> ae271d482789144a0563dc15f16ef4b0425606f8
 if __name__=='__main__':
     player = Player()
     player.play_game()

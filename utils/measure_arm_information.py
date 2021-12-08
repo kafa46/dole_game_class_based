@@ -5,7 +5,6 @@ import math
 
 from PIL import ImageFont, ImageDraw, Image
 from utils.angle_calculaters import calculate_angle
-from PIL import ImageFont, ImageDraw, Image
 
 mpDraw= mp.solutions.drawing_utils  #미디어 파이프 초록색 선 그리기
 mpPose = mp.solutions.pose
@@ -111,14 +110,6 @@ def measure_arm_distance(frame, win_name, success_crit=30):
     
     # cv2.putText(
     #     frame,
-<<<<<<< HEAD
-    #     str(" Bend your left and right arm: less than 30 degree"),
-    #     (10,20),
-    #     cv2.FONT_HERSHEY_SIMPLEX,
-    #     0.5,
-
- 
-=======
     #     str("Bend your left and right arm: less than 30 degree"),
     #     (10,20),
     #     cv2.FONT_HERSHEY_SIMPLEX,
@@ -127,16 +118,11 @@ def measure_arm_distance(frame, win_name, success_crit=30):
     #     2,
     # )
     
->>>>>>> ae271d482789144a0563dc15f16ef4b0425606f8
     img_pil = Image.fromarray(frame)
     draw = ImageDraw.Draw(img_pil)
     draw.text( (10,20), "양 팔을 30도 미만으로 구부려주세요", font=ImageFont.truetype('fonts/nanum/NanumBarunGothic/NanumBarunGothicBold.ttf',20), fill=(0,0,255))
     frame = np.array(img_pil)
-<<<<<<< HEAD
-
-=======
     
->>>>>>> ae271d482789144a0563dc15f16ef4b0425606f8
     # l1, l2 거리 계산을 위한 관절 좌표 추출
     results = pose.process(frame)   
     
@@ -257,11 +243,7 @@ def measure_arm_distance(frame, win_name, success_crit=30):
         img_pil = Image.fromarray(frame)
         draw = ImageDraw.Draw(img_pil)
         draw.text( (10,40), '왼쪽 팔 각도:' + str(int(angle['left'])) + '   Dist: {0:2.1f}'.format(distance['left']),
-<<<<<<< HEAD
-         font=ImageFont.truetype('fonts/nanum/NanumBarunGothic/NanumBarunGothicBold.ttf',20), fill=(0,0,255))
-=======
         font=ImageFont.truetype('fonts/nanum/NanumBarunGothic/NanumBarunGothicBold.ttf',20), fill=(0,0,255))
->>>>>>> ae271d482789144a0563dc15f16ef4b0425606f8
         frame = np.array(img_pil)
 
 
@@ -274,19 +256,11 @@ def measure_arm_distance(frame, win_name, success_crit=30):
         #     (0, 0, 255),
         #     2,
         # )
-<<<<<<< HEAD
-
-=======
->>>>>>> ae271d482789144a0563dc15f16ef4b0425606f8
         img_pil = Image.fromarray(frame)
         draw = ImageDraw.Draw(img_pil)
         draw.text( (10,60), '오른 팔 각도:' + str(int(angle['right'])) + '   Dist: {0:2.1f}'.format(distance['right']),
         font=ImageFont.truetype('fonts/nanum/NanumBarunGothic/NanumBarunGothicBold.ttf',20), fill=(0,0,255))
         frame = np.array(img_pil)
-<<<<<<< HEAD
-        
-=======
->>>>>>> ae271d482789144a0563dc15f16ef4b0425606f8
         cv2.imshow(win_name, frame)
 
     except:

@@ -131,7 +131,6 @@ if __name__=='__main__':
     
     bg_dir = './imgs/bg_yellow.png'
     top_dir = './imgs/mole_jklee_no_bg.png'
-    combine_bitwise(10, 10, bg_dir, top_dir)
-
+    
     print('Bye, end of computation ^^')
     
