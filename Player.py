@@ -16,6 +16,7 @@ from utils.angle_calculaters import calculate_angle
 from utils.get_player_grid_unit_id import get_grid_unit_id
 from utils.get_mole_unit_locations import get_grid_locations, get_grid_unit_distace
 from utils.mole_show_up import mole_show_up
+from utils.remove_background import remove_bg_mediapipe_selfie
 
 from remove_background_module import remove_background
 
@@ -23,7 +24,7 @@ mpPose = mp.solutions.pose
 pose = mp.solutions.pose.Pose()
 
 class Player():
-    def __init__(self, divide_units=3, arm_position='right') -> None:
+    def __init__(self, divide_units=3, arm_position='right', selfie_mode=True) -> None:
         self.divide_unit = divide_units
         self.max_angle = 160
         self.min_angle = 30
@@ -41,6 +42,7 @@ class Player():
         self.current_pane_id = None
         self.target_pane_id = None
         self.IS_FIRST = True
+        self.SELFIE_MODE = selfie_mode
         
         # 좌/우 팔 선택에 따라 해당 좌표 정보를 할당
         self.arm_position = arm_position
@@ -208,7 +210,11 @@ class Player():
             if not self.success:
                 # mole grid window에 초기 화면 뿌리기
                 cv2.imshow(win_manager.window_names['Mole'], mole_manager.start_img)
+<<<<<<< HEAD
                 #####################에러 두줄
+=======
+
+>>>>>>> ae271d482789144a0563dc15f16ef4b0425606f8
                 frame = cv2.flip(frame, 1)
 
                 cv2.imshow(self.player_win_name, frame)
@@ -263,6 +269,7 @@ class Player():
                 index_pos = self.calculate_frame_relative_coordinate(frame, results, self.index_position,)
                 
                 if index_pos == None:
+                    print('No index_pos detected!')
                     continue
                 
                 self.current_pane_id = get_grid_unit_id(frame, self.divide_unit, index_pos)
@@ -316,7 +323,9 @@ class Player():
                     mole_img = mole_manager.draw_grids_on_mole_window(mole_img)
                     mole_img = cv2.flip(mole_img, 1)
                     cv2.imshow(win_manager.window_names['Mole'], mole_img)
+
                 
+<<<<<<< HEAD
                 # Pane ID를 추출하지 못하면 아무일도 하지 않고 계속 진행
                 else: 
                     continue  
@@ -345,6 +354,16 @@ class Player():
                 # cv2.imshow(win_manager.window_names['Player'], frame_player_with_gage_left_right)
                 
                 
+=======
+                else:
+                    print(f'self.current_pane_id: {self.current_pane_id}')
+                    continue
+
+                frame_player = cv2.flip(frame_player, 1)
+                cv2.imshow(win_manager.window_names['Player'], frame_player)
+            
+            
+>>>>>>> ae271d482789144a0563dc15f16ef4b0425606f8
 if __name__=='__main__':
     player = Player()
     player.play_game()
